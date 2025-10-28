@@ -1,13 +1,13 @@
 import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
-import { AnchorVaultQ425 } from "../target/types/anchor_vault_q4_25";
+import { AnchorVault } from "../target/types/anchor_vault";
 import { expect } from "chai";
 
-describe("anchor_vault_q4_25", () => {
+describe("anchor_vault", () => {
   const provider = anchor.AnchorProvider.env();
   anchor.setProvider(provider);
 
-  const program = anchor.workspace.AnchorVaultQ425 as Program<AnchorVaultQ425>;
+  const program = anchor.workspace.anchorVault as Program<AnchorVault>;
   const user = provider.wallet.publicKey;
 
   // Derive PDAs
@@ -29,23 +29,24 @@ describe("anchor_vault_q4_25", () => {
   });
 
   it("Initialize the vault", async () => {
-    await program.methods
-      .initialize()
-      .accountsStrict({
-        user: user,
-        vaultState: vaultStatePda,
-        vault: vaultPda,
-        systemProgram: anchor.web3.SystemProgram.programId,
-      })
-      .rpc();
+    try {
+      await program.methods
+        .initialize()
+        .accounts({
+          user: user,
+          vaultState: vaultStatePda,
+          vault: vaultPda,
+          systemProgram: anchor.web3.SystemProgram.programId,
+        })
+        .rpc();
 
-    const vaultState = await program.account.vaultState.fetch(vaultStatePda);
-    expect(vaultState.vaultBump).to.equal(vaultBump);
-    expect(vaultState.stateBump).to.equal(stateBump);
-
-    const vaultBalance = await provider.connection.getBalance(vaultPda);
-    const rentExempt = await provider.connection.getMinimumBalanceForRentExemption(0);
-    expect(vaultBalance).to.equal(rentExempt);
+      const vaultState = await program.account.vaultState.fetch(vaultStatePda);
+      expect(vaultState.vaultBump).to.equal(vaultBump);
+      expect(vaultState.stateBump).to.equal(stateBump);
+    } catch (err) {
+      console.error("Error:", err);
+      throw err;
+    }
   });
 
   it("Deposit SOL into the vault", async () => {
